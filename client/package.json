@@ -1,0 +1,12 @@
+{
+  "name": "socketio-chat-frontend",
+  "version": "1.0.0",
+  "description": "Frontend test client for Socket.IO chat backend (login, friends, groups, messages)",
+  "scripts": {
+    "start": "npx serve .",
+    "start:dev": "npx serve . -l 4000"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.7.5"
+  }
+}

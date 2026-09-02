@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Socket.IO Chat Test</title>
+
+  <!-- Socket.IO client library, installed via npm (npm install), served
+       straight from node_modules — no bundler/build step needed.
+       Just run: npx serve .   (or any static server) from this folder. -->
+  <script src="node_modules/socket.io-client/dist/socket.io.js"></script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ============================================================
+       AUTH SCREEN (Login / Signup)
+       Shown first. Hidden once user logs in successfully.
+       ============================================================ -->
+  <div id="auth-screen" class="screen">
+    <div class="auth-box">
+
+      <div class="auth-tabs">
+        <button id="tab-login" class="auth-tab active">Log In</button>
+        <button id="tab-signup" class="auth-tab">Sign Up</button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <form id="login-form" class="auth-form">
+        <h2>Welcome back</h2>
+        <label for="login-email">Email</label>
+        <input type="email" id="login-email" placeholder="you@example.com" required />
+
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" placeholder="Enter password" required />
+
+        <!-- BACKEND HOOK: on submit, emit 'login' event with {username, password}
+             Listen for 'login_success' / 'login_error' response from server -->
+        <button type="submit" class="primary-btn">Log In</button>
+        <p id="login-error" class="error-msg"></p>
+      </form>
+
+      <!-- SIGNUP FORM -->
+      <form id="signup-form" class="auth-form hidden">
+        <h2>Create account</h2>
+
+        <label for="signup-name">Name</label>
+        <input type="text" id="signup-name" placeholder="Full name" required />
+
+        <label for="signup-email">Email</label>
+        <input type="email" id="signup-email" placeholder="you@example.com" required />
+
+        <label for="signup-password">Password</label>
+        <input type="password" id="signup-password" placeholder="Choose a password" required />
+
+        <label for="signup-phone">Phone</label>
+        <input type="tel" id="signup-phone" placeholder="01123123123" required />
+
+        <label for="signup-age">Age</label>
+        <input type="number" id="signup-age" min="1" placeholder="21" required />
+
+        <label for="signup-gender">Gender</label>
+        <!-- GenderEnum: Male = 0, Female = 1 -->
+        <select id="signup-gender" required>
+          <option value="0">Male</option>
+          <option value="1">Female</option>
+        </select>
+
+        <label for="signup-role">Role</label>
+        <!-- RoleEnum: User = 0, Admin = 1 -->
+        <select id="signup-role" required>
+          <option value="0">User</option>
+          <option value="1">Admin</option>
+        </select>
+
+        <label for="signup-bio">Bio</label>
+        <textarea id="signup-bio" rows="3" placeholder="A short bio (optional)"></textarea>
+
+        <!-- BACKEND HOOK: on submit, POST /auth/signup with the IUser fields above -->
+        <button type="submit" class="primary-btn">Sign Up</button>
+        <p id="signup-error" class="error-msg"></p>
+        <p id="signup-success" class="success-msg"></p>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MAIN APP SCREEN
+       Hidden until login/signup succeeds.
+       ============================================================ -->
+  <div id="app-screen" class="screen hidden">
+
+    <!-- ---------- SIDEBAR ---------- -->
+    <aside class="sidebar">
+
+      <!-- Current logged-in user info -->
+      <div class="current-user">
+        <div class="avatar" id="current-user-avatar">U</div>
+        <span id="current-username">Username</span>
+        <!-- BACKEND HOOK: on click, emit 'logout' event, then reset UI to auth screen -->
+        <button id="logout-btn" title="Log out">⏻</button>
+      </div>
+
+      <!-- Sidebar tab switch: Friends list vs Group chats list -->
+      <div class="sidebar-tabs">
+        <button id="tab-friends" class="sidebar-tab active">Friends</button>
+        <button id="tab-groups" class="sidebar-tab">Groups</button>
+      </div>
+
+      <!-- FRIENDS LIST -->
+      <!-- BACKEND HOOK: populate this list from 'friends_list' event data
+           Each friend item should have data-user-id + online/offline status -->
+      <ul id="friends-list" class="list">
+        <!-- Example static item, shows expected markup structure -->
+        <li class="list-item" data-conversation-type="dm" data-id="demo-friend-1">
+          <div class="avatar">A</div>
+          <div class="list-item-info">
+            <span class="list-item-name">Alice (example)</span>
+            <span class="list-item-status online">Online</span>
+          </div>
+        </li>
+      </ul>
+
+      <!-- GROUP CHATS LIST (hidden by default, toggled via tabs) -->
+      <!-- BACKEND HOOK: populate from 'group_list' event data
+           Each group item should have data-room-id -->
+      <ul id="groups-list" class="list hidden">
+        <li class="list-item" data-conversation-type="group" data-id="demo-group-1">
+          <div class="avatar">G</div>
+          <div class="list-item-info">
+            <span class="list-item-name"># general (example)</span>
+            <span class="list-item-status">4 members</span>
+          </div>
+        </li>
+      </ul>
+
+      <!-- Add friend / create group actions -->
+      <div class="sidebar-actions">
+        <!-- BACKEND HOOK: emit 'add_friend' with {username} -->
+        <button id="add-friend-btn" class="secondary-btn">+ Add Friend</button>
+        <!-- BACKEND HOOK: emit 'create_group' with {groupName, memberIds[]} -->
+        <button id="create-group-btn" class="secondary-btn">+ New Group</button>
+      </div>
+    </aside>
+
+    <!-- ---------- CHAT WINDOW ---------- -->
+    <main class="chat-window">
+
+      <!-- Header shows who/what you're chatting with -->
+      <div class="chat-header">
+        <div class="avatar" id="chat-header-avatar">?</div>
+        <div>
+          <h3 id="chat-header-name">Select a conversation</h3>
+          <span id="chat-header-status" class="chat-header-status"></span>
+        </div>
+      </div>
+
+      <!-- Messages render here -->
+      <!-- BACKEND HOOK: populate from 'chat_history' event on conversation open
+           New messages appended live via 'receive_message' event listener -->
+      <div id="messages-container" class="messages-container">
+        <p class="empty-state">No conversation selected. Pick a friend or group to start chatting.</p>
+      </div>
+
+      <!-- Typing indicator -->
+      <!-- BACKEND HOOK: shown/hidden based on 'user_typing' / 'user_stopped_typing' events -->
+      <div id="typing-indicator" class="typing-indicator hidden">Someone is typing...</div>
+
+      <!-- Message input -->
+      <form id="message-form" class="message-form">
+        <input
+          type="text"
+          id="message-input"
+          placeholder="Type a message..."
+          autocomplete="off"
+          disabled
+        />
+        <!-- BACKEND HOOK: on submit, emit 'send_message' with
+             {conversationType, conversationId, text} -->
+        <button type="submit" class="primary-btn" id="send-btn" disabled>Send</button>
+      </form>
+
+    </main>
+  </div>
+
+  <!-- App logic + Socket.IO event wiring -->
+  <script src="script.js"></script>
+</body>
+</html>
