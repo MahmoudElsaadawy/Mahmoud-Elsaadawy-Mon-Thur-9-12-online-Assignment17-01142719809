@@ -7,6 +7,7 @@ const chat_events_1 = __importDefault(require("./chat.events"));
 class ChatGateWay {
     register(socket) {
         chat_events_1.default.sendMessage(socket);
+        chat_events_1.default.joinRoom(socket);
     }
 }
 exports.default = new ChatGateWay();

@@ -11,7 +11,32 @@ const chat_model_1 = __importDefault(require("./models/chat.model"));
 class ChatSocketService {
     async sendMessage({ socket, data, }) {
         const createdBy = socket.user._id;
-        const { content, conversationId } = data;
+        const { content, conversationId, conversationType } = data;
+        if (conversationType == "group") {
+            const chat = await chat_model_1.default.findById(conversationId);
+            if (!chat) {
+                throw new error_exceptions_1.NotFoundException("Group chat not found");
+            }
+            const createdMessage = await message_model_1.default.create({
+                content,
+                attachments: [],
+                createdBy,
+                sentTo: conversationId,
+            });
+            chat.messages.push(createdMessage._id);
+            await chat.save();
+            const messagePayload = {
+                conversationType: "group",
+                conversationId: chat._id.toString(),
+                senderId: createdBy.toString(),
+                senderName: socket.user.name || "User",
+                text: createdMessage.content,
+                timestamp: createdMessage.createdAt,
+            };
+            socket.emit("receive_message", messagePayload);
+            socket.to(conversationId).emit("receive_message", messagePayload);
+            return;
+        }
         const friend = await user_model_1.default.findById(conversationId);
         if (!friend) {
             throw new error_exceptions_1.NotFoundException("Friend not found");
@@ -54,6 +79,22 @@ class ChatSocketService {
                 .to(JSON.parse(friendSockets))
                 .emit("receive_message", messagePayloadForRecipient);
         }
+    }
+    async joinRoom(socket, roomId) {
+        const group = chat_model_1.default.findOne({
+            _id: roomId.id,
+            group: {
+                $exists: true,
+            },
+            participants: {
+                $in: [socket.user._id],
+            },
+        });
+        if (!group) {
+            throw new error_exceptions_1.NotFoundException("Group chat not found");
+        }
+        socket.join(roomId.id);
+        console.log(`Socket ${socket.id} successfully joined room: ${roomId.id}`);
     }
 }
 exports.default = new ChatSocketService();

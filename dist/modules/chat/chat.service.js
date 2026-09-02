@@ -48,19 +48,24 @@ class ChatService {
         return newGroup;
     }
     async getGroupChat(user, groupId) {
-        const chat = await chat_model_1.default.findOne({
-            id: groupId,
-            group: {
-                $exists: false,
-            },
-            participants: {
-                $in: [user._id]
+        try {
+            const chat = await chat_model_1.default.findOne({
+                id: groupId,
+                group: {
+                    $exists: true,
+                },
+                participants: {
+                    $in: [user._id],
+                },
+            }).populate("messages createdBy");
+            if (!chat) {
+                throw new error_exceptions_1.NotFoundException("Chat not found");
             }
-        }).populate("messages createdBy");
-        if (!chat) {
-            throw new error_exceptions_1.NotFoundException("Chat not found");
+            return chat;
         }
-        return chat;
+        catch (e) {
+            console.log(e);
+        }
     }
 }
 exports.default = new ChatService();

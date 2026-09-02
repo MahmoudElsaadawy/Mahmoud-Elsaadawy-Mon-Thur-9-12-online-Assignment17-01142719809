@@ -10,5 +10,10 @@ class ChatEvents {
             chat_socket_service_1.default.sendMessage({ socket, data });
         });
     }
+    async joinRoom(socket) {
+        socket.on("join_conversation", (roomid) => {
+            return chat_socket_service_1.default.joinRoom(socket, roomid);
+        });
+    }
 }
 exports.default = new ChatEvents();

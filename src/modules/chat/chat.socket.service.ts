@@ -11,10 +11,42 @@ class ChatSocketService {
     data,
   }: {
     socket: Socket;
-    data: { content: string; conversationId: string };
+    data: {
+      content: string;
+      conversationId: string;
+      conversationType?: string;
+    };
   }) {
     const createdBy = socket.user._id;
-    const { content, conversationId } = data;
+    const { content, conversationId, conversationType } = data;
+
+    if (conversationType == "group") {
+      const chat = await ChatModel.findById(conversationId);
+      if (!chat) {
+        throw new NotFoundException("Group chat not found");
+      }
+
+      const createdMessage = await MessageModel.create({
+        content,
+        attachments: [],
+        createdBy,
+        sentTo: conversationId,
+      });
+      chat.messages.push(createdMessage._id);
+      await chat.save();
+
+      const messagePayload = {
+        conversationType: "group",
+        conversationId: chat._id.toString(),
+        senderId: createdBy.toString(),
+        senderName: socket.user.name || "User",
+        text: createdMessage.content,
+        timestamp: createdMessage.createdAt,
+      };
+      socket.emit("receive_message", messagePayload);
+      socket.to(conversationId).emit("receive_message", messagePayload);
+      return;
+    }
 
     const friend = await UserModel.findById(conversationId);
     if (!friend) {
@@ -63,6 +95,23 @@ class ChatSocketService {
         .to(JSON.parse(friendSockets))
         .emit("receive_message", messagePayloadForRecipient);
     }
+  }
+
+  async joinRoom(socket: Socket, roomId: { type: string; id: string }) {
+    const group = ChatModel.findOne({
+      _id: roomId.id,  
+      group: {
+        $exists: true,
+      },
+      participants: {
+        $in: [socket.user._id],
+      },
+    });
+    if (!group) {
+      throw new NotFoundException("Group chat not found");
+    }
+    socket.join(roomId.id)
+    console.log(`Socket ${socket.id} successfully joined room: ${roomId.id}`)
   }
 }
 
