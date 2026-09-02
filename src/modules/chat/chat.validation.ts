@@ -12,6 +12,14 @@ export const getChatSchema = {
   }),
 };
 
-export type getChatSchemaData = z.infer<
-  typeof getChatSchema.params
->;
+export const createGroupSchema = {
+  body: z.strictObject({
+    group: z.string(),
+    participants: z.string().refine(
+      (value) => {
+        return isValidObjectId(value);
+      },
+      { error: "Invalid id value" },
+    ),
+  }),
+};

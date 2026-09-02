@@ -10,6 +10,8 @@ const router = Router();
 export const routes = {
   base: "/chats",
   getChat: "/:id",
+  createGroup: "/create-group",
+  getGroupChat: "/get-group-chat/:id"
 };
 
 router.get(routes.getChat, validation(chatValidation.getChatSchema), auth, async (req, res) => {
@@ -19,5 +21,20 @@ router.get(routes.getChat, validation(chatValidation.getChatSchema), auth, async
 
   return successResponse({ res, data });
 });
+
+router.post(routes.createGroup, validation(chatValidation.createGroupSchema), auth, async (req, res) => {
+  const { group, participants } = req.body;
+  const user = req.user
+  const data = await chatService.createGroup(group, participants, user);
+
+  return successResponse({ res, data });
+});
+
+router.get(routes.getGroupChat, auth, async(req, res)=> {
+  const groupId = req.params.id as string
+  const user = req.user
+  const data = await chatService.getGroupChat(user, groupId)
+  return successResponse({ res, data });
+})
 
 export default router;

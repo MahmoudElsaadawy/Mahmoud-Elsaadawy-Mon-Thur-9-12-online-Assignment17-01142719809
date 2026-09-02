@@ -8,6 +8,7 @@ const user_model_1 = __importDefault(require("./models/user.model"));
 const error_exceptions_1 = require("../../utils/error.exceptions");
 const friendRequest_model_1 = __importDefault(require("../friendRequests/models/friendRequest.model"));
 const friendRequest_types_1 = require("../friendRequests/types/friendRequest.types");
+const chat_model_1 = __importDefault(require("../chat/models/chat.model"));
 class UserServices {
     async sendFriendRequest({ to, from, }) {
         const receiver = await user_model_1.default.findById(to);
@@ -107,6 +108,19 @@ class UserServices {
         return {
             friendRequests,
         };
+    }
+    async listGroups(userId) {
+        const groups = await chat_model_1.default.find({
+            participants: {
+                $in: [userId]
+            },
+            group: { $exists: true },
+        }).populate("participants messages");
+        return groups.map((chat) => ({
+            id: chat.roomId || chat._id.toString(),
+            name: chat.group,
+            memberCount: chat.participants.length,
+        }));
     }
 }
 exports.UserServices = UserServices;

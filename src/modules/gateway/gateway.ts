@@ -30,10 +30,10 @@ export const initializeIo = (httpServer: httpServer) => {
 
   io.on("connection", (socket: Socket) => {
     registerNewUser(socket);
+    chatGateway.register(socket)
     socket.on("disconnect", () => {
       revokeUser(socket);
     });
-    chatGateway.register(socket)
   }); 
 };
 

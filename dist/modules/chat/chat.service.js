@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const chat_model_1 = __importDefault(require("./models/chat.model"));
 const user_model_1 = __importDefault(require("../user/models/user.model"));
 const error_exceptions_1 = require("../../utils/error.exceptions");
+const nanoid_1 = require("nanoid");
 class ChatService {
     async getChat(user, id) {
         const friend = await user_model_1.default.findById(id);
@@ -14,21 +15,52 @@ class ChatService {
         }
         let chat = await chat_model_1.default.findOne({
             group: {
-                $exists: false
+                $exists: false,
             },
             participants: {
-                $all: [user._id, friend._id]
-            }
+                $all: [user._id, friend._id],
+            },
         }).populate("participants messages");
         if (!chat) {
             chat = await chat_model_1.default.create({
-                participants: [
-                    user._id, friend._id
-                ],
-                createdBy: user._id
+                participants: [user._id, friend._id],
+                createdBy: user._id,
             });
         }
         return chat;
     }
+    async createGroup(group, participants, user) {
+        const foundUsers = await user_model_1.default.find({
+            _id: {
+                $in: participants,
+            },
+        });
+        if (participants.length != foundUsers.length) {
+            throw new error_exceptions_1.NotFoundException("Some participants is not found");
+        }
+        const roomId = (0, nanoid_1.nanoid)(15);
+        const newGroup = await chat_model_1.default.create({
+            participants: [...participants, user.id],
+            group,
+            createdBy: user._id,
+            roomId,
+        });
+        return newGroup;
+    }
+    async getGroupChat(user, groupId) {
+        const chat = await chat_model_1.default.findOne({
+            id: groupId,
+            group: {
+                $exists: false,
+            },
+            participants: {
+                $in: [user._id]
+            }
+        }).populate("messages createdBy");
+        if (!chat) {
+            throw new error_exceptions_1.NotFoundException("Chat not found");
+        }
+        return chat;
+    }
 }
-exports.default = new ChatService;
+exports.default = new ChatService();

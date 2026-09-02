@@ -16,7 +16,10 @@ const chatSchema = new mongoose_1.default.Schema({
     },
     group: String,
     groupImage: String,
-    roomId: String,
+    roomId: {
+        type: String,
+        unique: true
+    },
     createdBy: {
         type: mongoose_1.default.Types.ObjectId,
         ref: "User",

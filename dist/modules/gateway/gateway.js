@@ -28,10 +28,10 @@ const initializeIo = (httpServer) => {
     });
     io.on("connection", (socket) => {
         registerNewUser(socket);
+        chat_gateway_1.default.register(socket);
         socket.on("disconnect", () => {
             revokeUser(socket);
         });
-        chat_gateway_1.default.register(socket);
     });
 };
 exports.initializeIo = initializeIo;

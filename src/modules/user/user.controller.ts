@@ -5,12 +5,13 @@ import chatRouter from "../chat/chat.controller";
 import userServices from "./user.service";
 
 const router = Router();
-router.use("/:id/chats", chatRouter)
+router.use("/:id/chats", chatRouter);
 
 export const routes = {
   base: "/users",
   myProfile: "/profile",
   listFriends: "/list-friends",
+  listGroups: "/list-groups",
 };
 
 router.get(routes.myProfile, auth, (req, res) => {
@@ -26,6 +27,15 @@ router.get(routes.myProfile, auth, (req, res) => {
 router.get(routes.listFriends, auth, async (req, res) => {
   const userId = req.user.id;
   const data = await userServices.listFriends(userId);
+  successResponse({
+    res,
+    data,
+  });
+});
+
+router.get(routes.listGroups, auth, async (req, res) => {
+  const userId = req.user.id;
+  const data = await userServices.listGroups(userId);
   successResponse({
     res,
     data,

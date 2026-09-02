@@ -12,6 +12,7 @@ import {
 } from "../../utils/error.exceptions";
 import FriendRequest from "../friendRequests/models/friendRequest.model";
 import { FriendRequestEnum } from "../friendRequests/types/friendRequest.types";
+import ChatModel from "../chat/models/chat.model";
 
 export class UserServices {
   async sendFriendRequest({
@@ -132,6 +133,21 @@ export class UserServices {
     return {
       friendRequests,
     };
+  }
+
+  async listGroups(userId: string) {
+    const groups = await ChatModel.find({
+      participants: {
+        $in: [userId]
+      },
+      group: { $exists: true },
+    }).populate("participants messages");
+
+    return groups.map((chat) => ({
+      id: chat.roomId || chat._id.toString(),
+      name: chat.group,
+      memberCount: chat.participants.length,
+    }));
   }
 }
 

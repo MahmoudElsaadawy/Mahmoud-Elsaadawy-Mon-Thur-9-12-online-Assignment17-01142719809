@@ -47,11 +47,25 @@ const router = (0, express_1.Router)();
 exports.routes = {
     base: "/chats",
     getChat: "/:id",
+    createGroup: "/create-group",
+    getGroupChat: "/get-group-chat/:id"
 };
 router.get(exports.routes.getChat, (0, validation_middleware_1.validation)(chatValidation.getChatSchema), auth_middleware_1.auth, async (req, res) => {
     const user = req.user;
     const friendId = req.params.id;
     const data = await chat_service_1.default.getChat(user, friendId);
+    return (0, success_response_1.successResponse)({ res, data });
+});
+router.post(exports.routes.createGroup, (0, validation_middleware_1.validation)(chatValidation.createGroupSchema), auth_middleware_1.auth, async (req, res) => {
+    const { group, participants } = req.body;
+    const user = req.user;
+    const data = await chat_service_1.default.createGroup(group, participants, user);
+    return (0, success_response_1.successResponse)({ res, data });
+});
+router.get(exports.routes.getGroupChat, auth_middleware_1.auth, async (req, res) => {
+    const groupId = req.params.id;
+    const user = req.user;
+    const data = await chat_service_1.default.getGroupChat(user, groupId);
     return (0, success_response_1.successResponse)({ res, data });
 });
 exports.default = router;
