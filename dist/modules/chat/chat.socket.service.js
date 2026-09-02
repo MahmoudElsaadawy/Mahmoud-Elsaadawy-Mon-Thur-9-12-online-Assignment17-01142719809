@@ -10,44 +10,47 @@ const user_model_1 = __importDefault(require("../user/models/user.model"));
 const chat_model_1 = __importDefault(require("./models/chat.model"));
 class ChatSocketService {
     async sendMessage({ socket, data, }) {
-        const createdBy = socket.user._id;
-        const { content, conversationId, conversationType } = data;
-        if (conversationType == "group") {
-            const chat = await chat_model_1.default.findById(conversationId);
-            if (!chat) {
-                throw new error_exceptions_1.NotFoundException("Group chat not found");
-            }
-            const createdMessage = await message_model_1.default.create({
-                content,
-                attachments: [],
-                createdBy,
-                sentTo: conversationId,
-            });
-            chat.messages.push(createdMessage._id);
-            await chat.save();
-            const messagePayload = {
-                conversationType: "group",
-                conversationId: chat._id.toString(),
-                senderId: createdBy.toString(),
-                senderName: socket.user.name || "User",
-                text: createdMessage.content,
-                timestamp: createdMessage.createdAt,
-            };
-            socket.emit("receive_message", messagePayload);
-            socket.to(conversationId).emit("receive_message", messagePayload);
-            return;
+        if (data.conversationType == "group") {
+            return this.sendGroupMessage({ socket, data });
         }
+        return this.sendDirectMessage({ socket, data });
+    }
+    async sendGroupMessage({ socket, data, }) {
+        const createdBy = socket.user._id;
+        const { content, conversationId } = data;
+        const chat = await chat_model_1.default.findById(conversationId);
+        if (!chat) {
+            throw new error_exceptions_1.NotFoundException("Group chat not found");
+        }
+        const createdMessage = await message_model_1.default.create({
+            content,
+            attachments: [],
+            createdBy,
+            sentTo: conversationId,
+        });
+        chat.messages.push(createdMessage._id);
+        await chat.save();
+        const messagePayload = {
+            conversationType: "group",
+            conversationId: chat._id.toString(),
+            senderId: createdBy.toString(),
+            senderName: socket.user.name || "User",
+            text: createdMessage.content,
+            timestamp: createdMessage.createdAt,
+        };
+        socket.emit("receive_message", messagePayload);
+        socket.to(conversationId).emit("receive_message", messagePayload);
+    }
+    async sendDirectMessage({ socket, data, }) {
+        const createdBy = socket.user._id;
+        const { content, conversationId } = data;
         const friend = await user_model_1.default.findById(conversationId);
         if (!friend) {
             throw new error_exceptions_1.NotFoundException("Friend not found");
         }
         const chat = await chat_model_1.default.findOne({
-            group: {
-                $exists: false,
-            },
-            participants: {
-                $all: [createdBy, friend._id],
-            },
+            group: { $exists: false },
+            participants: { $all: [createdBy, friend._id] },
         }).populate("messages");
         if (!chat) {
             throw new error_exceptions_1.NotFoundException("Chat not found");
