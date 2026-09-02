@@ -1,3 +1,5 @@
+!! The Frontend part in this project is written using claude !!
+
 # Chat Frontend — REST (auth/friends/groups) + Socket.IO (live chat)
 
 No bundler, no build step. socket.io-client installed via npm, loaded
