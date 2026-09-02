@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.jwtIdKey = exports.generateOtpKey = exports.redisKeys = exports.redisTTL = exports.redisDel = exports.redisGet = exports.redisSet = void 0;
+exports.connectedSocketsKey = exports.jwtIdKey = exports.generateOtpKey = exports.redisKeys = exports.redisTTL = exports.redisDel = exports.redisGet = exports.redisSet = void 0;
 const redis_connection_1 = require("../../DB/redis.connection");
 const redisSet = async (path, value, time) => {
     return await redis_connection_1.redisClient.set(path, value, {
@@ -35,3 +35,7 @@ const jwtIdKey = (userId, tokenType) => {
     return `Users:${userId}:login:${tokenType}`;
 };
 exports.jwtIdKey = jwtIdKey;
+const connectedSocketsKey = (userId) => {
+    return `Users:${userId}:sockets`;
+};
+exports.connectedSocketsKey = connectedSocketsKey;

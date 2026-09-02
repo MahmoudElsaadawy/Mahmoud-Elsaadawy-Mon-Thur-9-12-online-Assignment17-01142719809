@@ -37,30 +37,36 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.bootstrap = void 0;
-const express_1 = __importDefault(require("express"));
 const chalk_1 = __importDefault(require("chalk"));
+const cors_1 = __importDefault(require("cors"));
+const express_1 = __importDefault(require("express"));
 const morgan_1 = __importDefault(require("morgan"));
 const mongoose_connection_1 = require("./DB/mongoose.connection");
-const error_exceptions_1 = require("./utils/error.exceptions");
-const auth_controller_1 = __importStar(require("./modules/auth/auth.controller"));
-const user_controller_1 = __importStar(require("./modules/user/user.controller"));
-const post_controller_1 = __importStar(require("./modules/post/post.controller"));
-const comment_controller_1 = __importStar(require("./modules/comment/comment.controller"));
 const redis_connection_1 = require("./DB/redis.connection");
+const auth_controller_1 = __importStar(require("./modules/auth/auth.controller"));
+const chat_controller_1 = __importStar(require("./modules/chat/chat.controller"));
+const comment_controller_1 = __importStar(require("./modules/comment/comment.controller"));
+const gateway_1 = require("./modules/gateway/gateway");
+const post_controller_1 = __importStar(require("./modules/post/post.controller"));
+const user_controller_1 = __importStar(require("./modules/user/user.controller"));
+const error_exceptions_1 = require("./utils/error.exceptions");
 const bootstrap = async () => {
     const app = (0, express_1.default)();
     const port = process.env.PORT;
     await (0, mongoose_connection_1.connectDB)();
     await redis_connection_1.redisClient.connect();
+    app.use((0, cors_1.default)());
     app.use(express_1.default.json());
     app.use((0, morgan_1.default)("dev"));
     app.use(auth_controller_1.routes.base, auth_controller_1.default);
     app.use(user_controller_1.routes.base, user_controller_1.default);
     app.use(post_controller_1.routes.base, post_controller_1.default);
+    app.use(chat_controller_1.routes.base, chat_controller_1.default);
     app.use(comment_controller_1.routes.base, comment_controller_1.default);
     app.use(error_exceptions_1.globalErrorHandler);
-    app.listen(port, () => {
+    const httpServer = app.listen(port, () => {
         console.log(chalk_1.default.bgGreen(`Server is running on port ${port}`));
     });
+    (0, gateway_1.initializeIo)(httpServer);
 };
 exports.bootstrap = bootstrap;

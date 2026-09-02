@@ -5,6 +5,12 @@ import User from "../modules/user/models/user.model"
 import { jwtIdKey, redisGet } from "../utils/redis/redis.service" 
 import { HUser } from "../modules/user/types/user.types"
 
+declare module "socket.io" {
+  interface Socket {
+    user: HUser
+  }
+}
+
 declare module "express-serve-static-core" {
   interface Request {
   user: HUser

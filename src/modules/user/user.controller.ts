@@ -1,11 +1,11 @@
 import { Router } from "express";
 import { auth } from "../../middleware/auth.middleware";
 import { successResponse } from "../../utils/success.response";
+import chatRouter from "../chat/chat.controller";
 import userServices from "./user.service";
-import { validation } from "../../middleware/validation.middleware";
-import * as userValidation from "./user.validation";
 
 const router = Router();
+router.use("/:id/chats", chatRouter)
 
 export const routes = {
   base: "/users",

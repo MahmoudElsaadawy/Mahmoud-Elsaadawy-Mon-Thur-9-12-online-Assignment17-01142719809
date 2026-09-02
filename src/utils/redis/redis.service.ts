@@ -1,6 +1,6 @@
 import { redisClient } from "../../DB/redis.connection"
 
-export const redisSet = async(path: string, value: string, time: number)=> {
+export const redisSet = async(path: string, value: string , time: number)=> {
   return await redisClient.set(path, value, {
     expiration: {
       type: "EX",
@@ -31,4 +31,8 @@ export const generateOtpKey = (userId: string)=> {
 
 export const jwtIdKey = (userId: string, tokenType: string)=> {
   return `Users:${userId}:login:${tokenType}`
+}
+
+export const connectedSocketsKey = (userId: string)=> {
+  return `Users:${userId}:sockets`
 }

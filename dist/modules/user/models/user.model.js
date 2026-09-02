@@ -93,8 +93,6 @@ UserSchema.pre("save", async function () {
     if (this.isModified("password")) {
         this.password = await (0, hashing_1.hash)(this.password);
     }
-});
-UserSchema.pre("save", async function () {
     if (this.isModified("email")) {
         const otp = (0, generateOtp_1.generateOtp)();
         (0, sendEmail_1.sendEmail)({

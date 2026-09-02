@@ -7,8 +7,10 @@ exports.routes = void 0;
 const express_1 = require("express");
 const auth_middleware_1 = require("../../middleware/auth.middleware");
 const success_response_1 = require("../../utils/success.response");
+const chat_controller_1 = __importDefault(require("../chat/chat.controller"));
 const user_service_1 = __importDefault(require("./user.service"));
 const router = (0, express_1.Router)();
+router.use("/:id/chats", chat_controller_1.default);
 exports.routes = {
     base: "/users",
     myProfile: "/profile",
