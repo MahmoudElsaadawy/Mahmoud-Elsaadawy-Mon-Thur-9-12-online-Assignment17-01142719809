@@ -34,7 +34,7 @@ export const initializeIo = (httpServer: httpServer) => {
       revokeUser(socket);
     });
     chatGateway.register(socket)
-  });
+  }); 
 };
 
 const registerNewUser = async (socket: Socket) => {

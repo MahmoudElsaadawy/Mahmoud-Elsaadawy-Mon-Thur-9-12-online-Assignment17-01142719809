@@ -3,10 +3,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const user_model_1 = __importDefault(require("../user/models/user.model"));
 const error_exceptions_1 = require("../../utils/error.exceptions");
-const chat_model_1 = __importDefault(require("./models/chat.model"));
+const redis_service_1 = require("../../utils/redis/redis.service");
 const message_model_1 = __importDefault(require("../message/models/message.model"));
+const user_model_1 = __importDefault(require("../user/models/user.model"));
+const chat_model_1 = __importDefault(require("./models/chat.model"));
 class ChatSocketService {
     async sendMessage({ socket, data, }) {
         const createdBy = socket.user._id;
@@ -17,21 +18,42 @@ class ChatSocketService {
         }
         const chat = await chat_model_1.default.findOne({
             group: {
-                $exists: false
+                $exists: false,
             },
             participants: {
-                $all: [createdBy, friend._id]
-            }
-        });
+                $all: [createdBy, friend._id],
+            },
+        }).populate("messages");
         if (!chat) {
             throw new error_exceptions_1.NotFoundException("Chat not found");
         }
-        const newMessage = await message_model_1.default.create({
+        const createdMessage = await message_model_1.default.create({
             content,
             attachments: [],
             createdBy,
             sentTo: friend._id,
         });
+        chat.messages.push(createdMessage._id);
+        await chat.save();
+        const messagePayloadForSender = {
+            conversationType: "dm",
+            conversationId: friend.id,
+            senderId: createdBy.toString(),
+            senderName: socket.user.name || "User",
+            text: createdMessage.content,
+            timestamp: createdMessage.createdAt,
+        };
+        socket.emit("receive_message", messagePayloadForSender);
+        const friendSockets = await (0, redis_service_1.redisGet)((0, redis_service_1.connectedSocketsKey)(friend.id));
+        if (friendSockets) {
+            const messagePayloadForRecipient = {
+                ...messagePayloadForSender,
+                conversationId: createdBy.toString(),
+            };
+            socket
+                .to(JSON.parse(friendSockets))
+                .emit("receive_message", messagePayloadForRecipient);
+        }
     }
 }
 exports.default = new ChatSocketService();
